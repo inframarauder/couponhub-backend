@@ -11,6 +11,7 @@ Required env variables:
 - `JWT_PRIVATE_KEY`
 - `EMAIL`
 - `EMAIL_PASSWORD`
+- `MAX_REPORTS`
 
 **Implemented Features** :
 

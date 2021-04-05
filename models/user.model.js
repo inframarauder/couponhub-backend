@@ -36,10 +36,17 @@ const userSchema = new mongoose.Schema(
     credits: {
       type: Number,
       default: 0,
-      min: 0,
     },
     verificationCode: {
       type: Number,
+    },
+    reports: {
+      type: Number,
+      default: 0,
+    },
+    blacklisted: {
+      type: Boolean,
+      default: false,
     },
   },
   { timestamps: true }
@@ -65,6 +72,17 @@ userSchema.pre("save", async function (next) {
     return next();
   } catch (error) {
     console.error("Error in password hashing\n", error);
+  }
+});
+
+userSchema.post("updateOne", async function () {
+  try {
+    if (this.reports > process.env.MAX_REPORTS) {
+      this.blacklisted = true;
+      await this.save();
+    }
+  } catch (error) {
+    console.error("Error in blacklisting\n", error);
   }
 });
 

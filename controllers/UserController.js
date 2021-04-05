@@ -1,6 +1,11 @@
 const User = require("../models/user.model");
 const bcrypt = require("bcryptjs");
-const { BadRequest, NotFound, Unauthorized } = require("../utils/error");
+const {
+  BadRequest,
+  NotFound,
+  Unauthorized,
+  Forbidden,
+} = require("../utils/error");
 const { sendVerificationCode } = require("../utils/email");
 
 exports.createUser = async (req, res, next) => {
@@ -28,6 +33,10 @@ exports.loginUser = async (req, res, next) => {
       const user = await User.findOne({ email });
       if (!user) {
         throw new NotFound("No user registered with this email");
+      } else if (user.blacklisted) {
+        throw new Forbidden(
+          "Your account has been blacklisted. Account access shall be restricted until further notice."
+        );
       } else {
         let valid = await bcrypt.compare(password, user.password);
         if (valid) {
