@@ -94,6 +94,9 @@ exports.reportCoupon = async (req, res, next) => {
       { $inc: { reports: 1, credits: -1 } },
       { new: true, runValidators: true }
     );
+
+    sendReportMail(report, user);
+
     return res
       .status(201)
       .json({ success: true, message: "Coupon reported successfully" });
