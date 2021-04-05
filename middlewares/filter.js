@@ -4,7 +4,6 @@ exports.filterCoupons = (req, res, next) => {
   let mongoQuery = {
     status: "available",
     expiryDate: { $gte: new Date() },
-    postedBy: { $ne: req.user._id },
   };
   let mongoProjection = {
     code: 0,
@@ -30,11 +29,6 @@ exports.filterCoupons = (req, res, next) => {
     if (type !== "all") {
       mongoQuery["type"] = type;
     }
-  }
-
-  if (postedBy) {
-    delete mongoQuery["status"];
-    mongoQuery["postedBy"] = postedBy;
   }
 
   res.locals.query = mongoQuery;

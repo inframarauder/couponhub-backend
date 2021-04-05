@@ -90,19 +90,7 @@ exports.verifyEmail = async (req, res, next) => {
 
 exports.getUserProfile = async (req, res, next) => {
   try {
-    let { userId } = req.params;
-
-    let projection = { password: 0 };
-
-    if (userId === "me") {
-      userId = req.user._id;
-    }
-    if (userId !== req.user._id) {
-      projection.credits = 0;
-      projection.isEmailVerified = 0;
-    }
-
-    const user = await User.findById(userId, projection).lean();
+    const user = await User.findById(req.user._id, { password: 0 }).lean();
 
     if (!user) {
       throw new NotFound("User not found!");

@@ -15,6 +15,7 @@ exports.createCoupon = async (req, res, next) => {
 
     //send response
     return res.status(201).json({
+      success: true,
       message: "Coupon created successfully , 1 credit added to your account!",
     });
   } catch (error) {
@@ -30,7 +31,7 @@ exports.listCoupons = async (req, res, next) => {
       .lean()
       .sort({ _id: -1 });
 
-    return res.status(200).json(coupons);
+    return res.status(200).json({ success: true, data: coupons });
   } catch (error) {
     next(error);
   }
@@ -38,7 +39,6 @@ exports.listCoupons = async (req, res, next) => {
 
 exports.buyCoupon = async (req, res, next) => {
   try {
-    //check if user has atleast 1 credit:
     const user = await User.findById(req.user._id);
 
     //buy coupon if user has greater than 0 credits
@@ -46,27 +46,33 @@ exports.buyCoupon = async (req, res, next) => {
       //buy coupon if found
 
       const { couponId } = req.body;
-      const coupon = await Coupon.findOneAndUpdate(
-        {
-          _id: couponId,
-          status: "available",
-          postedBy: { $ne: req.user._id }, // you cannot buy coupons posted by you
-        },
-        { status: "sold", soldTo: req.user._id },
-        { new: true, runValidators: true }
-      ).lean();
-
-      if (coupon) {
-        //deduct 1 credit from user
-        user.credits -= 1;
-        await user.save();
-
-        //send response
-        return res.status(200).json({
-          code: coupon.code,
-        });
+      if (!couponId) {
+        throw new BadRequest("Coupon ID must be provided");
       } else {
-        throw new NotFound("Coupon not found!");
+        const coupon = await Coupon.findById(couponId);
+        if (!coupon) {
+          throw new NotFound("Coupon not found!");
+        } else if (coupon.status !== "available") {
+          throw new BadRequest("Coupon not available for purchase");
+        } else if (coupon.postedBy === req.user._id) {
+          throw new BadRequest(
+            "You cannot buy coupons posted from your account"
+          );
+        } else {
+          //update coupon status
+          coupon.status = "sold";
+          coupon.soldTo = req.user._id;
+          await coupon.save();
+
+          //update user credits
+          user.credits -= 1;
+          await user.save();
+
+          return res.status(200).json({
+            success: true,
+            data: { coupon },
+          });
+        }
       }
     } else {
       throw new BadRequest("Insufficient credits to buy coupon!");

@@ -24,7 +24,5 @@ Required env variables:
 **TODO**
 
 - include email templates
-- shift from gmail to mailgun/sendgrid
 - implement google auth
-- implement access token/refresh token auth
 - impelement reporting user for posting fake/used coupon

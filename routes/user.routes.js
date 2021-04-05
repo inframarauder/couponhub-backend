@@ -41,9 +41,8 @@ router.post("/login", loginUser);
 /**
  * @route GET /api/users/profile
  * @access 'logged in user'
- * @params 'userId'
  */
-router.get("/profile/:userId", isAuthenticated, getUserProfile);
+router.get("/profile", isAuthenticated, getUserProfile);
 
 /**
  * @route DELETE /api/users/delete
