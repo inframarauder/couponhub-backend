@@ -7,11 +7,12 @@ exports.createUser = async (req, res, next) => {
   try {
     let user = await User.findOne({ email: req.body.email });
     if (user) {
-      throw new BadRequest("This email is already registered");
+      throw new BadRequest("This email is already registered.Try logging in.");
     } else {
       user = await new User(req.body).save();
+      user.password = undefined;
       const token = user.createToken();
-      return res.status(201).json({ token });
+      return res.status(201).json({ success: true, data: { user, token } });
     }
   } catch (error) {
     next(error);
@@ -20,16 +21,21 @@ exports.createUser = async (req, res, next) => {
 
 exports.loginUser = async (req, res, next) => {
   try {
-    const user = await User.findOne({ email: req.body.email });
-    if (!user) {
-      throw new NotFound("No user registered with this email");
+    const { email, password } = req.body;
+    if (!email || !password) {
+      throw new BadRequest("Email or Password not provided");
     } else {
-      let valid = await bcrypt.compare(req.body.password, user.password);
-      if (valid) {
-        const token = user.createToken();
-        return res.status(201).json({ token });
+      const user = await User.findOne({ email }, { password: 0 });
+      if (!user) {
+        throw new NotFound("No user registered with this email");
       } else {
-        throw new Unauthorized("Passwords do not match!");
+        let valid = await bcrypt.compare(password, user.password);
+        if (valid) {
+          const token = user.createToken();
+          return res.status(201).json({ success: true, data: { user, token } });
+        } else {
+          throw new Unauthorized("Incorrect password");
+        }
       }
     }
   } catch (error) {
@@ -49,9 +55,10 @@ exports.sendVerificationEmail = async (req, res, next) => {
         await user.save();
       }
       sendVerificationCode(user.email, user.verificationCode);
-      return res
-        .status(200)
-        .json({ message: `Verification code sent to ${user.email}` });
+      return res.status(200).json({
+        success: true,
+        message: `Verification code sent to ${user.email}`,
+      });
     }
   } catch (error) {
     next(error);
@@ -71,6 +78,7 @@ exports.verifyEmail = async (req, res, next) => {
       await user.save();
       const token = user.createToken(); // new token with verification status updated
       return res.status(200).json({
+        success: true,
         message: "Email verified successfully!",
         token,
       });
@@ -83,17 +91,15 @@ exports.verifyEmail = async (req, res, next) => {
 exports.getUserProfile = async (req, res, next) => {
   try {
     let { userId } = req.params;
-    let projection = {
-      name: 1,
-      email: 1,
-    };
+
+    let projection = { password: 0 };
+
     if (userId === "me") {
       userId = req.user._id;
     }
-    //show credits only if profile being fetched is of current user
-    if (userId === req.user._id) {
-      projection.credits = 1;
-      projection.isEmailVerified = 1;
+    if (userId !== req.user._id) {
+      projection.credits = 0;
+      projection.isEmailVerified = 0;
     }
 
     const user = await User.findById(userId, projection).lean();
@@ -101,7 +107,7 @@ exports.getUserProfile = async (req, res, next) => {
     if (!user) {
       throw new NotFound("User not found!");
     } else {
-      return res.status(200).json(user);
+      return res.status(200).json({ success: true, user });
     }
   } catch (error) {
     next(error);
