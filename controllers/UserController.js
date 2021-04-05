@@ -25,13 +25,14 @@ exports.loginUser = async (req, res, next) => {
     if (!email || !password) {
       throw new BadRequest("Email or Password not provided");
     } else {
-      const user = await User.findOne({ email }, { password: 0 });
+      const user = await User.findOne({ email });
       if (!user) {
         throw new NotFound("No user registered with this email");
       } else {
         let valid = await bcrypt.compare(password, user.password);
         if (valid) {
           const token = user.createToken();
+          user.password = undefined;
           return res.status(201).json({ success: true, data: { user, token } });
         } else {
           throw new Unauthorized("Incorrect password");
