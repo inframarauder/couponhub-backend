@@ -1,14 +1,14 @@
 const nodemailer = require("nodemailer");
+const ejs = require("ejs");
 
-exports.sendVerificationCode = async (email, code) => {
-  //nodemailer setup
-  const transporter = nodemailer.createTransport({
+const getTransporter = (user) =>
+  nodemailer.createTransport({
     host: "smtp.zoho.in",
     port: 465,
     secure: true,
 
     auth: {
-      user: process.env.EMAIL_VERIFY,
+      user,
       pass: process.env.EMAIL_PASSWORD,
     },
 
@@ -16,48 +16,39 @@ exports.sendVerificationCode = async (email, code) => {
       rejectUnauthorized: false,
     },
   });
-  const mailOptions = {
-    from: process.env.EMAIL_VERIFY,
-    to: email,
-    subject: "SubSwap Verification Code",
-    html: `
-    <div>
-      <h3>SubSwap</h3>
-      <hr/>
-      <p>
-        Thank you for using SubSwap.<br/>
-        Enter the following code to verify your account - <br/>
-        <h2>${code}</h2> 
-      </p>
-      <hr/>
-    </div>
-    `,
-  };
+
+const getMailOptions = (from, to, subject, html) => ({
+  from,
+  to,
+  subject,
+  html,
+});
+
+exports.sendVerificationCode = async (name, email, code) => {
+  const { EMAIL_VERIFY } = process.env;
+  const transporter = getTransporter(EMAIL_VERIFY);
   try {
+    const data = await ejs.renderFile(
+      __dirname + "/email-templates/verification.ejs",
+      {
+        name,
+        code,
+      }
+    );
+    const mailOptions = getMailOptions(
+      EMAIL_VERIFY,
+      email,
+      "SubSwap Verification Code",
+      data
+    );
     await transporter.sendMail(mailOptions);
   } catch (error) {
-    console.error(error);
+    console.error("Error in sending verification code\n", error);
   }
 };
 
 exports.sendReportMail = async (coupon, user, reason) => {
-  //nodemailer setup
-
-  const transporter = nodemailer.createTransport({
-    host: "smtp.zoho.in",
-    port: 465,
-    secure: true,
-
-    auth: {
-      user: process.env.EMAIL_SUPPORT,
-      pass: process.env.EMAIL_PASSWORD,
-    },
-
-    tls: {
-      rejectUnauthorized: false,
-    },
-  });
-
+  const transporter = getTransporter(process.env.EMAIL_SUPPORT);
   const mailOptions = {
     from: process.env.EMAIL_SUPPORT,
     to: user.email,

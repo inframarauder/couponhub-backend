@@ -64,7 +64,7 @@ exports.sendVerificationEmail = async (req, res, next) => {
         user.verificationCode = Math.floor(100000 + Math.random() * 900000);
         await user.save();
       }
-      sendVerificationCode(user.email, user.verificationCode);
+      sendVerificationCode(user.name, user.email, user.verificationCode);
       return res.status(200).json({
         success: true,
         message: `Verification code sent to ${user.email}`,

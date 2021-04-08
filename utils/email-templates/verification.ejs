@@ -1,0 +1,44 @@
+<html>
+  <head>
+    <style>
+      .main {
+        border: 1px solid #4733ff;
+        border-radius: 10px;
+        width: 40%;
+        margin: auto;
+        padding: 20px;
+        font-size: 1.2rem;
+      }
+
+      .code {
+        margin: auto;
+        background-color: #f1eeee;
+        border: 1px dashed #4733ff;
+        border-radius: 5px;
+        color: #4733ff;
+        font-size: 1.4rem;
+        font-weight: 800;
+        padding: 20px;
+        width: 12 0px;
+        text-align: center;
+      }
+      @media only screen and (max-width: 500px) {
+        .main {
+          width: 100vw;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="main">
+      <h3>Welcome to SubSwap!</h3>
+      <p>Hi <%= name %>,</p>
+      <p>Use the following verification code to verify your email:</p>
+      <p class="code"><%= code %></p>
+      <p>
+        Regards,<br />
+        Team SubSwap
+      </p>
+    </div>
+  </body>
+</html>
