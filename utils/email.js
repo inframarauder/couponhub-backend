@@ -40,7 +40,7 @@ exports.sendVerificationCode = async (email, code) => {
   }
 };
 
-exports.sendReportMail = async (report, user) => {
+exports.sendReportMail = async (coupon, user, reason) => {
   //nodemailer setup
 
   const transporter = nodemailer.createTransport({
@@ -66,18 +66,26 @@ exports.sendReportMail = async (report, user) => {
     <div>
       <p>Dear ${user.name},</p>
       <p>
-        One of the users on our platform reported the following coupon posted by you:<br/>
-       <strong> ${report.coupon} </strong><br/>
+        A user on our platform reported the following coupon posted by you:<br/>
+       <strong> ${coupon._id} </strong><br/>
        for the following reason:<br/>
-       <strong>${report.reason}</strong>
+       <strong>${reason}</strong>
       </p>
-      <p> You have now been reported ${user.reports} out of ${process.env.MAX_REPORTS} times. As per our community guidelines,we have deducted one credit from your account.<br/>
+      ${
+        user.reports < process.env.MAX_REPORTS
+          ? `<p> You have now been reported ${user.reports} out of ${process.env.MAX_REPORTS} times. As per our community guidelines, we have deleted the coupon from our database and deducted one credit from your account.<br/>
       If your account had zero credits, it now has negative credits. You can increase your credits by posting valid coupons.<br/>
       <strong>Please note that once your account gets reported ${process.env.MAX_REPORTS} times, you shall be blacklisted and access to your account shall be resticted until further notice.</strong>
-      </p>
+      </p>`
+          : `<p> 
+          You have now been reported ${user.reports} out of ${process.env.MAX_REPORTS} times.<br/>
+          Your account has been blacklisted and access to the same shall remain restricted until further notice.
+         </p>`
+      }
+      
       <p>If you think this was a mistake and you have been wrongfully penalised, please write to us at support@subswap.space.</p>
       <p>
-        Regards,
+        Regards,<br/>
         Team SubSwap
       </p>
       <hr/>

@@ -1,7 +1,7 @@
 const Coupon = require("../models/coupon.model");
 const User = require("../models/user.model");
-const Report = require("../models/report.model");
 const { NotFound, BadRequest } = require("../utils/error");
+const { sendReportMail } = require("../utils/email");
 
 exports.createCoupon = async (req, res, next) => {
   try {
@@ -86,16 +86,28 @@ exports.buyCoupon = async (req, res, next) => {
 exports.reportCoupon = async (req, res, next) => {
   try {
     const { couponId, reason } = req.body;
-    await new Report({ couponId, reason }).save();
+    if (!couponId) {
+      throw new BadRequest("Coupon ID must be provided in report");
+    }
+    if (!reason) {
+      throw new BadRequest("You must specify a reason for the report");
+    }
 
-    const coupon = await Coupon.findById(couponId).lean();
-    await User.findByIdAndUpdate(
-      coupon.postedBy,
+    const coupon = await Coupon.findById(couponId);
+
+    if (!coupon) {
+      throw new NotFound("Coupon not found!");
+    }
+
+    const user = await User.findOneAndUpdate(
+      { _id: coupon.postedBy },
       { $inc: { reports: 1, credits: -1 } },
       { new: true, runValidators: true }
     );
 
-    sendReportMail(report, user);
+    await coupon.delete();
+
+    sendReportMail(coupon, user, reason);
 
     return res
       .status(201)

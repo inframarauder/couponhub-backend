@@ -75,11 +75,11 @@ userSchema.pre("save", async function (next) {
   }
 });
 
-userSchema.post("updateOne", async function () {
+userSchema.post("findOneAndUpdate", async function (doc) {
   try {
-    if (this.reports > process.env.MAX_REPORTS) {
-      this.blacklisted = true;
-      await this.save();
+    if (doc.reports >= parseInt(process.env.MAX_REPORTS)) {
+      doc.blacklisted = true;
+      await doc.save();
     }
   } catch (error) {
     console.error("Error in blacklisting\n", error);
