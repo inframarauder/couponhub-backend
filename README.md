@@ -2,8 +2,6 @@
 
 REST APIs for CouponHub - Node.js,Express,MongoDB
 
-**Use mongoose@15.11.15. Minor bug reported in later versions.**
-
 Required env variables:
 
 - `DB_URI`
@@ -21,6 +19,7 @@ Required env variables:
 - List coupons
 - Create Coupon (Email must be verified)
 - Buy Coupon (Email must be verified)
+- Reporting fake coupons
 
 **TODO**
 
