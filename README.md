@@ -24,6 +24,4 @@ Required env variables:
 
 **TODO**
 
-- include email templates
 - implement google auth
-- impelement reporting user for posting fake/used coupon
