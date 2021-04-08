@@ -1,0 +1,63 @@
+<html>
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <style>
+      .main {
+        border: 1px solid #4733ff;
+        border-radius: 10px;
+        width: 40%;
+        margin: auto;
+        padding: 20px;
+        font-size: 1.2rem;
+      }
+
+      .coupon-card {
+        margin: auto;
+        list-style-type: none;
+        background-color: #f1eeee;
+        border: 1px dashed #4733ff;
+        border-radius: 5px;
+        padding: 20px;
+      }
+
+      .coupon-card > li {
+        padding: 10px;
+      }
+      @media only screen and (max-width: 500px) {
+        .main {
+          width: 100vw;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="main">
+      <h3>You have been reported!</h3>
+      <p>Hi <%= user.name %>,</p>
+      <p>A user on our platform reported the following coupon posted by you:</p>
+      <ul class="coupon-card">
+        <li>Code : <strong><%= coupon.code %></strong></li>
+        <li>Source Platform : <strong><%= coupon.sourcePlatform %></strong></li>
+        <li>Redeem Platform : <strong><%= coupon.redeemPlatform %></strong></li>
+        <li>Title : <strong><%= coupon.title %></strong></li>
+        <li>Description : <strong><%= coupon.description %></strong></li>
+        <li>Expiry Date : <strong><%= coupon.expiryDate %></strong></li>
+      </ul>
+      <p>citing the following reason:</p>
+      <blockquote><%= reason %></blockquote>
+      <p>
+        You have now been reported 3 times.As per our community rules, your
+        account shall be blacklisted. You may no longer access your SubSwap
+        account until further notice.
+      </p>
+      <p>
+        If you believe that this was a mistake and you have been wrongfully
+        penalised, please write to us at support@subswap.space.
+      </p>
+      <p>
+        Regards,<br />
+        Team SubSwap
+      </p>
+    </div>
+  </body>
+</html>
