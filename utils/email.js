@@ -59,7 +59,7 @@ exports.sendReportMail = async (coupon, user, reason) => {
     );
 
     const mailOptions = getMailOptions(
-      EMAIL_VERIFY,
+      EMAIL_SUPPORT,
       email,
       "Report Alert!",
       data
