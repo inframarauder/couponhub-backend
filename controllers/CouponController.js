@@ -116,21 +116,3 @@ exports.reportCoupon = async (req, res, next) => {
     next(error);
   }
 };
-
-exports.deleteCoupon = async (req, res, next) => {
-  try {
-    const coupon = await Coupon.findById(req.params.couponId);
-    if (!coupon) {
-      throw new NotFound("Coupon not found");
-    } else if (coupon.status !== "available") {
-      throw new BadRequest("Coupon has already been sold");
-    } else if (coupon.postedBy.toString() !== req.user._id) {
-      throw new Unauthorized("You can only delete coupons posted by you");
-    } else {
-      await coupon.delete();
-      return res.status(200).json({ message: "Coupon Deleted" });
-    }
-  } catch (error) {
-    next(error);
-  }
-};
