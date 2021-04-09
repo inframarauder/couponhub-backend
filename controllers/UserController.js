@@ -15,9 +15,8 @@ exports.createUser = async (req, res, next) => {
       throw new BadRequest("This email is already registered.Try logging in.");
     } else {
       user = await new User(req.body).save();
-      user.password = undefined;
       const token = user.createToken();
-      return res.status(201).json({ success: true, data: { user, token } });
+      return res.status(201).json({ token });
     }
   } catch (error) {
     next(error);
@@ -41,8 +40,7 @@ exports.loginUser = async (req, res, next) => {
         let valid = await bcrypt.compare(password, user.password);
         if (valid) {
           const token = user.createToken();
-          user.password = undefined;
-          return res.status(201).json({ success: true, data: { user, token } });
+          return res.status(201).json({ token });
         } else {
           throw new Unauthorized("Incorrect password");
         }
@@ -66,7 +64,6 @@ exports.sendVerificationEmail = async (req, res, next) => {
       }
       sendVerificationCode(user.name, user.email, user.verificationCode);
       return res.status(200).json({
-        success: true,
         message: `Verification code sent to ${user.email}`,
       });
     }
@@ -88,7 +85,6 @@ exports.verifyEmail = async (req, res, next) => {
       await user.save();
       const token = user.createToken(); // new token with verification status updated
       return res.status(200).json({
-        success: true,
         message: "Email verified successfully!",
         token,
       });
@@ -105,7 +101,7 @@ exports.getUserProfile = async (req, res, next) => {
     if (!user) {
       throw new NotFound("User not found!");
     } else {
-      return res.status(200).json({ success: true, user });
+      return res.status(200).json({ user });
     }
   } catch (error) {
     next(error);

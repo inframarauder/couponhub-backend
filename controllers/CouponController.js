@@ -16,7 +16,6 @@ exports.createCoupon = async (req, res, next) => {
 
     //send response
     return res.status(201).json({
-      success: true,
       message: "Coupon created successfully , 1 credit added to your account!",
     });
   } catch (error) {
@@ -32,7 +31,7 @@ exports.listCoupons = async (req, res, next) => {
       .lean()
       .sort({ _id: -1 });
 
-    return res.status(200).json({ success: true, data: coupons });
+    return res.status(200).json({ coupons });
   } catch (error) {
     next(error);
   }
@@ -69,10 +68,7 @@ exports.buyCoupon = async (req, res, next) => {
           user.credits -= 1;
           await user.save();
 
-          return res.status(200).json({
-            success: true,
-            data: { coupon },
-          });
+          return res.status(200).json({ coupon });
         }
       }
     } else {
@@ -113,9 +109,7 @@ exports.reportCoupon = async (req, res, next) => {
 
     sendReportMail(coupon, user, reason);
 
-    return res
-      .status(201)
-      .json({ success: true, message: "Coupon reported successfully" });
+    return res.status(201).json({ message: "Coupon reported successfully" });
   } catch (error) {
     next(error);
   }
@@ -126,7 +120,7 @@ exports.deleteCoupon = async (req, res, next) => {
     const coupon = await Coupon.findById(req.params.couponId);
     if (coupon && coupon.postedBy === req.user._id) {
       await coupon.delete();
-      return res.status(200).json({ success: true, message: "Coupon Deleted" });
+      return res.status(200).json({ message: "Coupon Deleted" });
     } else {
       throw new Unauthorized("You cant delete a coupon posted by someone else");
     }
