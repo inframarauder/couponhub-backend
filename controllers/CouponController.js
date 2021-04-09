@@ -1,6 +1,6 @@
 const Coupon = require("../models/coupon.model");
 const User = require("../models/user.model");
-const { NotFound, BadRequest } = require("../utils/error");
+const { NotFound, BadRequest, Unauthorized } = require("../utils/error");
 const { sendReportMail } = require("../utils/email");
 
 exports.createCoupon = async (req, res, next) => {
@@ -116,6 +116,20 @@ exports.reportCoupon = async (req, res, next) => {
     return res
       .status(201)
       .json({ success: true, message: "Coupon reported successfully" });
+  } catch (error) {
+    next(error);
+  }
+};
+
+exports.deleteCoupon = async (req, res, next) => {
+  try {
+    const coupon = await Coupon.findById(req.params.couponId);
+    if (coupon && coupon.postedBy === req.user._id) {
+      await coupon.delete();
+      return res.status(200).json({ success: true, message: "Coupon Deleted" });
+    } else {
+      throw new Unauthorized("You cant delete a coupon posted by someone else");
+    }
   } catch (error) {
     next(error);
   }

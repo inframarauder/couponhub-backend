@@ -4,6 +4,7 @@ const {
   listCoupons,
   buyCoupon,
   reportCoupon,
+  deleteCoupon,
 } = require("../controllers/CouponController");
 const { isAuthenticated, isVerified } = require("../middlewares/auth");
 const { filterCoupons } = require("../middlewares/filter");
@@ -36,5 +37,13 @@ router.put("/buy", isAuthenticated, isVerified, buyCoupon);
  */
 
 router.post("/report", isAuthenticated, isVerified, reportCoupon);
+
+/**
+ * @route DELETE /api/coupons/delete/:couponId
+ * @access only logged in and verified user
+ * @params 'couponId'
+ */
+
+router.delete("/delete/:couponId", isAuthenticated, isVerified, deleteCoupon);
 
 module.exports = router;
