@@ -1,6 +1,7 @@
 const mongoose = require("mongoose");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
+const Token = require("./token.model");
 
 const userSchema = new mongoose.Schema(
   {
@@ -52,13 +53,27 @@ const userSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-userSchema.methods.createToken = function () {
+userSchema.methods.createAccessToken = function () {
   try {
-    const { JWT_PRIVATE_KEY } = process.env;
-    const user = { _id: this._id, isEmailVerified: this.isEmailVerified };
-    return jwt.sign({ user }, JWT_PRIVATE_KEY);
+    const { ACCESS_TOKEN_SECRET } = process.env;
+    const user = this.toObject();
+    delete user.password;
+    return jwt.sign({ user }, ACCESS_TOKEN_SECRET, { expiresIn: "15m" });
   } catch (error) {
-    console.error("Error in jwt generation\n", error);
+    console.error("Error in access token generation\n", error);
+  }
+};
+
+userSchema.methods.createRefreshToken = async function () {
+  try {
+    const { REFRESH_TOKEN_SECRET } = process.env;
+    const token = jwt.sign({ _id: this._id }, REFRESH_TOKEN_SECRET, {
+      expiresIn: "365d",
+    });
+    await Token.create({ token });
+    return token;
+  } catch (error) {
+    console.error("Error in refresh token generation\n", error);
   }
 };
 

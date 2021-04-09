@@ -10,8 +10,8 @@ exports.isAuthenticated = (req, res, next) => {
     return res.status(403).json({ error: "Access denied, no token provided!" });
   } else {
     try {
-      const { JWT_PRIVATE_KEY } = process.env;
-      const payload = jwt.verify(token, JWT_PRIVATE_KEY);
+      const { ACCESS_TOKEN_SECRET } = process.env;
+      const payload = jwt.verify(token, ACCESS_TOKEN_SECRET);
       req.user = payload.user;
       next();
     } catch (error) {

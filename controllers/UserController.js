@@ -1,5 +1,7 @@
-const User = require("../models/user.model");
+const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
+const User = require("../models/user.model");
+const Token = require("../models/token.model");
 const {
   BadRequest,
   NotFound,
@@ -15,8 +17,10 @@ exports.createUser = async (req, res, next) => {
       throw new BadRequest("This email is already registered.Try logging in.");
     } else {
       user = await new User(req.body).save();
-      const token = user.createToken();
-      return res.status(201).json({ token });
+      const accessToken = user.createAccessToken();
+      const refreshToken = await user.createRefreshToken();
+
+      return res.status(201).json({ accessToken, refreshToken });
     }
   } catch (error) {
     next(error);
@@ -39,11 +43,43 @@ exports.loginUser = async (req, res, next) => {
       } else {
         let valid = await bcrypt.compare(password, user.password);
         if (valid) {
-          const token = user.createToken();
-          return res.status(201).json({ token });
+          const accessToken = user.createAccessToken();
+          const refreshToken = await user.createRefreshToken();
+
+          return res.status(201).json({ accessToken, refreshToken });
         } else {
           throw new Unauthorized("Incorrect password");
         }
+      }
+    }
+  } catch (error) {
+    next(error);
+  }
+};
+
+exports.refreshToken = async (req, res, next) => {
+  try {
+    const { refreshToken } = req.body;
+    if (!refreshToken) {
+      throw new BadRequest("Refresh token missing!");
+    } else {
+      const token = await Token.findOne({ token: refreshToken }).lean();
+      if (token) {
+        const payload = jwt.verify(
+          token.token,
+          process.env.REFRESH_TOKEN_SECRET
+        );
+        const user = await User.findById(payload._id);
+        if (!user) {
+          throw new NotFound("User not found");
+        } else if (user.blacklisted) {
+          throw new Forbidden("Account blacklisted");
+        } else {
+          const accessToken = user.createAccessToken();
+          return res.status(200).json({ accessToken });
+        }
+      } else {
+        throw new Unauthorized("Token expired!");
       }
     }
   } catch (error) {
@@ -83,10 +119,10 @@ exports.verifyEmail = async (req, res, next) => {
       user.verificationCode = null;
       user.isEmailVerified = true;
       await user.save();
-      const token = user.createToken(); // new token with verification status updated
+      const accessToken = user.createAccessToken(); // new token with verification status updated
       return res.status(200).json({
         message: "Email verified successfully!",
-        token,
+        accessToken,
       });
     }
   } catch (error) {
@@ -112,6 +148,16 @@ exports.deleteUser = async (req, res, next) => {
   try {
     await User.findByIdAndDelete(req.user._id);
     return res.sendStatus(204);
+  } catch (error) {
+    next(error);
+  }
+};
+
+exports.logoutUser = async (req, res, next) => {
+  try {
+    const { refreshToken } = req.body;
+    await Token.findOneAndDelete({ token: refreshToken });
+    return res.status(200).json({ success: "User logged out!" });
   } catch (error) {
     next(error);
   }
