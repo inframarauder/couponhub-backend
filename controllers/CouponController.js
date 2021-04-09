@@ -96,7 +96,9 @@ exports.reportCoupon = async (req, res, next) => {
     }
 
     if (coupon.soldTo !== req.user._id) {
-      throw new BadRequest("You can only report coupons that belong to you");
+      throw new BadRequest(
+        "You can only report the coupons you have purchased"
+      );
     }
 
     const user = await User.findOneAndUpdate(
@@ -118,7 +120,7 @@ exports.reportCoupon = async (req, res, next) => {
 exports.deleteCoupon = async (req, res, next) => {
   try {
     const coupon = await Coupon.findById(req.params.couponId);
-    if (coupon && coupon.postedBy === req.user._id) {
+    if (coupon && coupon.postedBy.toString() === req.user._id) {
       await coupon.delete();
       return res.status(200).json({ message: "Coupon Deleted" });
     } else {
