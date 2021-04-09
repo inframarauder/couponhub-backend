@@ -95,7 +95,7 @@ exports.reportCoupon = async (req, res, next) => {
       throw new NotFound("Coupon not found");
     }
 
-    if (coupon.soldTo !== req.user._id) {
+    if (coupon.soldTo.toString() !== req.user._id) {
       throw new BadRequest(
         "You can only report the coupons you have purchased"
       );

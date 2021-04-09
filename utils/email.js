@@ -60,7 +60,7 @@ exports.sendReportMail = async (coupon, user, reason) => {
 
     const mailOptions = getMailOptions(
       EMAIL_SUPPORT,
-      email,
+      user.email,
       "Report Alert!",
       data
     );
