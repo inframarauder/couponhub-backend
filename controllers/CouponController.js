@@ -96,7 +96,11 @@ exports.reportCoupon = async (req, res, next) => {
     const coupon = await Coupon.findById(couponId);
 
     if (!coupon) {
-      throw new NotFound("Coupon not found!");
+      throw new NotFound("Coupon not found");
+    }
+
+    if (coupon.soldTo !== req.user._id) {
+      throw new BadRequest("You can only report coupons that belong to you");
     }
 
     const user = await User.findOneAndUpdate(
