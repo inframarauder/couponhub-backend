@@ -12,7 +12,8 @@ Required env variables:
 - `EMAIL_SUPPORT`
 - `EMAIL_PASSWORD`
 - `MAX_REPORTS`
+- `GOOGLE_CLIENT_ID`
 
 **TODO**
 
-- implement google auth
+- implement password reset
