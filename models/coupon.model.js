@@ -4,53 +4,57 @@ const couponSchema = new mongoose.Schema(
   {
     code: {
       type: String,
-      required: true,
-    }, // coupon code
+      required: [true, "Coupon Code is required!"],
+    },
     expiryDate: {
       type: Date,
-      required: true,
-    }, //expiry date of the coupon
+      required: [true, "Expiry Date is required!"],
+      min: [Date.now(), "Cannot add expired coupoons"],
+    },
     sourcePlatform: {
       type: String,
-      required: true,
-    }, // platform from where coupon was obtained
+      required: [true, "Source platform is required"],
+    },
     redeemPlatform: {
       type: String,
-      required: true,
-    }, //platform where coupon can be redeemed
+      required: [true, "Redeem platform is required"],
+    },
     type: {
       type: String,
-      required: true,
+      required: [true, "Type is required"],
       enum: ["percentage", "flat", "free"],
-    }, //type of discount - percentage,flat or free
+    },
     amount: {
       type: Number,
-      required: function () {
-        return this.type === "percentage" || this.type === "flat";
-      },
-    }, // amount of discount
+      required: [
+        function () {
+          return this.type === "percentage" || this.type === "flat";
+        },
+        "Amount is required",
+      ],
+    },
     title: {
       type: String,
-      required: true,
-    }, // short title for the coupon ad
+      required: [true, "Title is required"],
+      maxlength: [100, "Title cannot exceed 100 characters"],
+    },
     description: {
       type: String,
-      required: true,
-    }, // detailed description of the coupon with all the terms and conditions
+      required: [true, "Description is required"],
+    },
     postedBy: {
       type: mongoose.Schema.Types.ObjectId,
-      required: true,
       ref: "User",
-    }, //user who created the ad for the coupon
+    },
     status: {
       type: String,
       enum: ["sold", "available"],
       default: "available",
-    }, //to keep track of the status of a coupon in the DB
+    },
     soldTo: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
-    }, // user who buys the coupon
+    },
   },
   { timestamps: true }
 );

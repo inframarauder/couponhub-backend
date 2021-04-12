@@ -2,29 +2,17 @@
 
 REST APIs for CouponHub - Node.js,Express,MongoDB
 
-**Use mongoose@15.11.15. Minor bug reported in later versions.**
-
 Required env variables:
 
 - `DB_URI`
 - `PORT`
-- `JWT_PRIVATE_KEY`
-- `EMAIL`
+- `ACCESS_TOKEN_SECRET`
+- `REFRESH_TOKEN_SECRET`
+- `EMAIL_VERIFY`
+- `EMAIL_SUPPORT`
 - `EMAIL_PASSWORD`
-
-**Implemented Features** :
-
-- User signup/login
-- Email Verification
-- View/Delete user profile
-- List coupons
-- Create Coupon (Email must be verified)
-- Buy Coupon (Email must be verified)
+- `MAX_REPORTS`
 
 **TODO**
 
-- include email templates
-- shift from gmail to mailgun/sendgrid
 - implement google auth
-- implement access token/refresh token auth
-- impelement reporting user for posting fake/used coupon

@@ -1,48 +1,23 @@
 const Coupon = require("../models/coupon.model");
 const User = require("../models/user.model");
-const Joi = require("joi");
-const validate = require("../utils/validate");
-const { NotFound, BadRequest } = require("../utils/error");
+const { NotFound, BadRequest, Unauthorized } = require("../utils/error");
+const { sendReportMail } = require("../utils/email");
 
 exports.createCoupon = async (req, res, next) => {
   try {
-    const schema = Joi.object({
-      code: Joi.string().required(),
-      expiryDate: Joi.date().required().greater("now"),
-      sourcePlatform: Joi.string().required(),
-      redeemPlatform: Joi.string().required(),
-      type: Joi.string().required().valid("percentage", "flat", "free"),
-      amount: Joi.when("type", [
-        {
-          is: "percentage",
-          then: Joi.number().required().min(0).max(100),
-        },
-        {
-          is: "flat",
-          then: Joi.number().required().min(0),
-        },
-      ]),
-      title: Joi.string().required().max(100),
-      description: Joi.string().required(),
+    //create new coupon
+    await new Coupon({
+      ...req.body,
+      postedBy: req.user._id,
+    }).save();
+
+    //increase user credits by 1
+    await User.findByIdAndUpdate(req.user._id, { $inc: { credits: 1 } });
+
+    //send response
+    return res.status(201).json({
+      message: "Coupon created successfully , 1 credit added to your account!",
     });
-
-    const isValid = validate(schema, req.body);
-    if (isValid) {
-      //create new coupon
-      await new Coupon({
-        ...req.body,
-        postedBy: req.user._id,
-      }).save();
-
-      //increase user credits by 1
-      await User.findByIdAndUpdate(req.user._id, { $inc: { credits: 1 } });
-
-      //send response
-      return res.status(201).json({
-        message:
-          "Coupon created successfully , 1 credit added to your account!",
-      });
-    }
   } catch (error) {
     next(error);
   }
@@ -56,7 +31,7 @@ exports.listCoupons = async (req, res, next) => {
       .lean()
       .sort({ _id: -1 });
 
-    return res.status(200).json(coupons);
+    return res.status(200).json({ coupons });
   } catch (error) {
     next(error);
   }
@@ -64,45 +39,79 @@ exports.listCoupons = async (req, res, next) => {
 
 exports.buyCoupon = async (req, res, next) => {
   try {
-    const schema = Joi.object({
-      couponId: Joi.string().required(),
-    });
-    const isValid = validate(schema, req.body);
-    if (isValid) {
-      //check if user has atleast 1 credit:
-      const user = await User.findById(req.user._id);
+    const user = await User.findById(req.user._id);
 
-      //buy coupon if user has greater than 0 credits
-      if (user.credits > 0) {
-        //buy coupon if found
+    //buy coupon if user has greater than 0 credits
+    if (user.credits > 0) {
+      //buy coupon if found
 
-        const { couponId } = req.body;
-        const coupon = await Coupon.findOneAndUpdate(
-          {
-            _id: couponId,
-            status: "available",
-            postedBy: { $ne: req.user._id }, // you cannot buy coupons posted by you
-          },
-          { status: "sold", soldTo: req.user._id },
-          { new: true, runValidators: true }
-        ).lean();
+      const { couponId } = req.body;
+      if (!couponId) {
+        throw new BadRequest("Coupon ID must be provided");
+      } else {
+        const coupon = await Coupon.findById(couponId);
+        if (!coupon) {
+          throw new NotFound("Coupon not found!");
+        } else if (coupon.status !== "available") {
+          throw new BadRequest("Coupon not available for purchase");
+        } else if (coupon.postedBy === req.user._id) {
+          throw new BadRequest(
+            "You cannot buy coupons posted from your account"
+          );
+        } else {
+          //update coupon status
+          coupon.status = "sold";
+          coupon.soldTo = req.user._id;
+          await coupon.save();
 
-        if (coupon) {
-          //deduct 1 credit from user
+          //update user credits
           user.credits -= 1;
           await user.save();
 
-          //send response
-          return res.status(200).json({
-            code: coupon.code,
-          });
-        } else {
-          throw new NotFound("Coupon not found!");
+          return res.status(200).json({ coupon });
         }
-      } else {
-        throw new BadRequest("Insufficient credits to buy coupon!");
       }
+    } else {
+      throw new BadRequest("Insufficient credits to buy coupon!");
     }
+  } catch (error) {
+    next(error);
+  }
+};
+
+exports.reportCoupon = async (req, res, next) => {
+  try {
+    const { couponId, reason } = req.body;
+    if (!couponId) {
+      throw new BadRequest("Coupon ID must be provided in report");
+    }
+    if (!reason) {
+      throw new BadRequest("You must specify a reason for the report");
+    }
+
+    const coupon = await Coupon.findById(couponId);
+
+    if (!coupon) {
+      throw new NotFound("Coupon not found");
+    }
+
+    if (coupon.soldTo.toString() !== req.user._id) {
+      throw new BadRequest(
+        "You can only report the coupons you have purchased"
+      );
+    }
+
+    const user = await User.findOneAndUpdate(
+      { _id: coupon.postedBy },
+      { $inc: { reports: 1, credits: -1 } },
+      { new: true, runValidators: true }
+    );
+
+    await coupon.delete();
+
+    sendReportMail(coupon, user, reason);
+
+    return res.status(201).json({ message: "Coupon reported successfully" });
   } catch (error) {
     next(error);
   }

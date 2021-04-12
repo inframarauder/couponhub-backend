@@ -6,6 +6,8 @@ const {
   getUserProfile,
   deleteUser,
   sendVerificationEmail,
+  refreshToken,
+  logoutUser,
 } = require("../controllers/UserController");
 
 const { isAuthenticated } = require("../middlewares/auth");
@@ -39,16 +41,30 @@ router.put("/verify_email", isAuthenticated, verifyEmail);
 router.post("/login", loginUser);
 
 /**
+ * @route POST /api/users/refresh_token
+ * @access 'public'
+ * @body 'refreshToken'
+ */
+
+router.post("/refresh_token", refreshToken);
+
+/**
  * @route GET /api/users/profile
  * @access 'logged in user'
- * @params 'userId'
  */
-router.get("/profile/:userId", isAuthenticated, getUserProfile);
+router.get("/profile", isAuthenticated, getUserProfile);
 
 /**
  * @route DELETE /api/users/delete
  * @access 'logged in user'
  */
 router.delete("/delete", isAuthenticated, deleteUser);
+
+/**
+ * @route DELETE /api/users/logout
+ * @access 'logged in user'
+ * @body 'refreshToken'
+ */
+router.delete("/logout", isAuthenticated, logoutUser);
 
 module.exports = router;

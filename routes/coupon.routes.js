@@ -3,6 +3,7 @@ const {
   createCoupon,
   listCoupons,
   buyCoupon,
+  reportCoupon,
 } = require("../controllers/CouponController");
 const { isAuthenticated, isVerified } = require("../middlewares/auth");
 const { filterCoupons } = require("../middlewares/filter");
@@ -27,5 +28,13 @@ router.get("/list", isAuthenticated, filterCoupons, listCoupons);
  * @body 'couponId'
  */
 router.put("/buy", isAuthenticated, isVerified, buyCoupon);
+
+/**
+ * @route POST /api/coupons/report
+ * @access only logged in and verified user
+ * @body  'couponId','reason'
+ */
+
+router.post("/report", isAuthenticated, isVerified, reportCoupon);
 
 module.exports = router;

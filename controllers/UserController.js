@@ -1,27 +1,85 @@
-const User = require("../models/user.model");
-const Joi = require("joi");
+const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
-const validate = require("../utils/validate");
-const { BadRequest, NotFound, Unauthorized } = require("../utils/error");
+const User = require("../models/user.model");
+const Token = require("../models/token.model");
+const {
+  BadRequest,
+  NotFound,
+  Unauthorized,
+  Forbidden,
+} = require("../utils/error");
 const { sendVerificationCode } = require("../utils/email");
 
 exports.createUser = async (req, res, next) => {
   try {
-    const schema = Joi.object({
-      name: Joi.string().required().min(1),
-      email: Joi.string().email().required(),
-      password: Joi.string().required().min(6),
-    });
-    const isValid = validate(schema, req.body);
+    let user = await User.findOne({ email: req.body.email });
+    if (user) {
+      throw new BadRequest("This email is already registered.Try logging in.");
+    } else {
+      user = await new User(req.body).save();
+      const accessToken = user.createAccessToken();
+      const refreshToken = await user.createRefreshToken();
 
-    if (isValid) {
-      let user = await User.findOne({ email: req.body.email });
-      if (user) {
-        throw new BadRequest("This email is already registered");
+      return res.status(201).json({ accessToken, refreshToken });
+    }
+  } catch (error) {
+    next(error);
+  }
+};
+
+exports.loginUser = async (req, res, next) => {
+  try {
+    const { email, password } = req.body;
+    if (!email || !password) {
+      throw new BadRequest("Email or Password not provided");
+    } else {
+      const user = await User.findOne({ email });
+      if (!user) {
+        throw new NotFound("No user registered with this email");
+      } else if (user.blacklisted) {
+        throw new Forbidden(
+          "Your account has been blacklisted. Account access shall be restricted until further notice."
+        );
       } else {
-        user = await new User(req.body).save();
-        const token = user.createToken();
-        return res.status(201).json({ token });
+        let valid = await bcrypt.compare(password, user.password);
+        if (valid) {
+          const accessToken = user.createAccessToken();
+          const refreshToken = await user.createRefreshToken();
+
+          return res.status(201).json({ accessToken, refreshToken });
+        } else {
+          throw new Unauthorized("Incorrect password");
+        }
+      }
+    }
+  } catch (error) {
+    next(error);
+  }
+};
+
+exports.refreshToken = async (req, res, next) => {
+  try {
+    const { refreshToken } = req.body;
+    if (!refreshToken) {
+      throw new BadRequest("Refresh token missing!");
+    } else {
+      const token = await Token.findOne({ token: refreshToken }).lean();
+      if (token) {
+        const payload = jwt.verify(
+          token.token,
+          process.env.REFRESH_TOKEN_SECRET
+        );
+        const user = await User.findById(payload._id);
+        if (!user) {
+          throw new NotFound("User not found");
+        } else if (user.blacklisted) {
+          throw new Forbidden("Account blacklisted");
+        } else {
+          const accessToken = user.createAccessToken();
+          return res.status(200).json({ accessToken });
+        }
+      } else {
+        throw new Unauthorized("Token expired!");
       }
     }
   } catch (error) {
@@ -40,10 +98,10 @@ exports.sendVerificationEmail = async (req, res, next) => {
         user.verificationCode = Math.floor(100000 + Math.random() * 900000);
         await user.save();
       }
-      sendVerificationCode(user.email, user.verificationCode);
-      return res
-        .status(200)
-        .json({ message: `Verification code sent to ${user.email}` });
+      sendVerificationCode(user.name, user.email, user.verificationCode);
+      return res.status(200).json({
+        message: `Verification code sent to ${user.email}`,
+      });
     }
   } catch (error) {
     next(error);
@@ -52,54 +110,20 @@ exports.sendVerificationEmail = async (req, res, next) => {
 
 exports.verifyEmail = async (req, res, next) => {
   try {
-    const schema = Joi.object({
-      code: Joi.number().required().min(100000).max(999999),
-    });
-    const isValid = validate(schema, req.body);
-
-    if (isValid) {
-      const user = await User.findById(req.user._id);
-      if (!user) {
-        throw new NotFound("User not found!");
-      } else if (user.verificationCode !== req.body.code) {
-        throw new BadRequest("Invalid code");
-      } else {
-        user.verificationCode = null;
-        user.isEmailVerified = true;
-        await user.save();
-        const token = user.createToken(); // new token with verification status updated
-        return res.status(200).json({
-          message: "Email verified successfully!",
-          token,
-        });
-      }
-    }
-  } catch (error) {
-    next(error);
-  }
-};
-
-exports.loginUser = async (req, res, next) => {
-  try {
-    const schema = Joi.object({
-      email: Joi.string().email().required(),
-      password: Joi.string().required(),
-    });
-    const isValid = validate(schema, req.body);
-
-    if (isValid) {
-      const user = await User.findOne({ email: req.body.email });
-      if (!user) {
-        throw new NotFound("No user registered with this email");
-      } else {
-        let valid = await bcrypt.compare(req.body.password, user.password);
-        if (valid) {
-          const token = user.createToken();
-          return res.status(201).json({ token });
-        } else {
-          throw new Unauthorized("Passwords do not match!");
-        }
-      }
+    const user = await User.findById(req.user._id);
+    if (!user) {
+      throw new NotFound("User not found!");
+    } else if (user.verificationCode !== req.body.code) {
+      throw new BadRequest("Invalid code");
+    } else {
+      user.verificationCode = null;
+      user.isEmailVerified = true;
+      await user.save();
+      const accessToken = user.createAccessToken(); // new token with verification status updated
+      return res.status(200).json({
+        message: "Email verified successfully!",
+        accessToken,
+      });
     }
   } catch (error) {
     next(error);
@@ -108,26 +132,12 @@ exports.loginUser = async (req, res, next) => {
 
 exports.getUserProfile = async (req, res, next) => {
   try {
-    let { userId } = req.params;
-    let projection = {
-      name: 1,
-      email: 1,
-    };
-    if (userId === "me") {
-      userId = req.user._id;
-    }
-    //show credits only if profile being fetched is of current user
-    if (userId === req.user._id) {
-      projection.credits = 1;
-      projection.isEmailVerified = 1;
-    }
-
-    const user = await User.findById(userId, projection).lean();
+    const user = await User.findById(req.user._id, { password: 0 }).lean();
 
     if (!user) {
       throw new NotFound("User not found!");
     } else {
-      return res.status(200).json(user);
+      return res.status(200).json({ user });
     }
   } catch (error) {
     next(error);
@@ -138,6 +148,16 @@ exports.deleteUser = async (req, res, next) => {
   try {
     await User.findByIdAndDelete(req.user._id);
     return res.sendStatus(204);
+  } catch (error) {
+    next(error);
+  }
+};
+
+exports.logoutUser = async (req, res, next) => {
+  try {
+    const { refreshToken } = req.body;
+    await Token.findOneAndDelete({ token: refreshToken });
+    return res.status(200).json({ success: "User logged out!" });
   } catch (error) {
     next(error);
   }
