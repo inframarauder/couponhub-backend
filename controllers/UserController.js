@@ -1,5 +1,6 @@
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
+const { OAuth2Client } = require("google-auth-library");
 const User = require("../models/user.model");
 const Token = require("../models/token.model");
 const {
@@ -124,6 +125,39 @@ exports.verifyEmail = async (req, res, next) => {
         message: "Email verified successfully!",
         accessToken,
       });
+    }
+  } catch (error) {
+    next(error);
+  }
+};
+
+exports.googleAuth = async (req, res, next) => {
+  try {
+    const { tokenId } = req.body;
+    if (!tokenId) {
+      throw new BadRequest("Token Id missing for google auth");
+    } else {
+      const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+      const { payload } = await client.verifyIdToken({
+        idToken: tokenId,
+        audience: process.env.GOOGLE_CLIENT_ID,
+      });
+      const { name, email } = payload;
+      let user = await User.findOne({ email });
+      if (user) {
+        //user exists - login (check blacklist)
+        if (user.blacklisted) {
+          throw new Forbidden("Account blacklisted");
+        }
+      } else {
+        //user does not exist - register new user
+        user = await new User({ authType: "google", name, email }).save();
+      }
+
+      //generate tokens
+      const accessToken = user.createAccessToken();
+      const refreshToken = await user.createRefreshToken();
+      return res.status(201).json({ accessToken, refreshToken });
     }
   } catch (error) {
     next(error);
