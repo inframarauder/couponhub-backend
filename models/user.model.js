@@ -17,7 +17,9 @@ const userSchema = new mongoose.Schema(
     },
     isEmailVerified: {
       type: Boolean,
-      default: false,
+      default: function () {
+        return this.authType === "google";
+      },
     },
     password: {
       type: String,
@@ -79,7 +81,7 @@ userSchema.methods.createRefreshToken = async function () {
 
 userSchema.pre("save", async function (next) {
   try {
-    if (this.isNew) {
+    if (this.isNew && this.authType === "plain") {
       const salt = await bcrypt.genSalt(10);
       this.password = await bcrypt.hash(this.password, salt);
     }
