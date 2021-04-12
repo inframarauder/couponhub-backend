@@ -8,6 +8,7 @@ const {
   sendVerificationEmail,
   refreshToken,
   logoutUser,
+  googleAuth,
 } = require("../controllers/UserController");
 
 const { isAuthenticated } = require("../middlewares/auth");
@@ -39,6 +40,13 @@ router.put("/verify_email", isAuthenticated, verifyEmail);
  */
 
 router.post("/login", loginUser);
+
+/**
+ * @route POST /api/users/google_auth
+ * @access 'public',
+ * @body 'tokenId'
+ */
+router.post("/google_auth", googleAuth);
 
 /**
  * @route POST /api/users/refresh_token
