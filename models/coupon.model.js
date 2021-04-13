@@ -24,13 +24,23 @@ const couponSchema = new mongoose.Schema(
       required: [true, "Type is required"],
       enum: ["percentage", "flat", "free"],
     },
-    amount: {
-      type: Number,
-      required: [
-        function () {
-          return this.type === "percentage" || this.type === "flat";
-        },
-        "Amount is required",
+    category: {
+      type: String,
+      required: [true, "Category is required"],
+      enum: [
+        "Food",
+        "Fashion",
+        "Education",
+        "Tech",
+        "Healthcare",
+        "Lifestyle",
+        "Finance",
+        "Shopping",
+        "Streaming",
+        "Gaming",
+        "Travel",
+        "Utilities",
+        "Other",
       ],
     },
     title: {
