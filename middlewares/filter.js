@@ -1,5 +1,5 @@
 exports.filterCoupons = (req, res, next) => {
-  const { status, searchText, type, postedBy } = req.query;
+  const { status, searchText, type, postedBy, category } = req.query;
 
   let mongoQuery = {
     status: "available",
@@ -35,6 +35,9 @@ exports.filterCoupons = (req, res, next) => {
   if (postedBy) {
     delete mongoQuery["status"];
     mongoQuery["postedBy"] = postedBy;
+  }
+  if (category) {
+    mongoQuery["category"] = category;
   }
 
   res.locals.query = mongoQuery;
