@@ -27,7 +27,7 @@ exports.listCoupons = async (req, res, next) => {
   try {
     const { query, projection } = res.locals;
     const coupons = await Coupon.find(query, projection)
-      .populate({ path: "postedBy", select: ["name", "email"] })
+      .populate({ path: "postedBy", select: ["name", "admin"] })
       .lean()
       .sort({ _id: -1 });
 
