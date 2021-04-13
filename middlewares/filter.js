@@ -27,7 +27,7 @@ exports.filterCoupons = (req, res, next) => {
   }
 
   if (type) {
-    if (type !== "all") {
+    if (type !== "All") {
       mongoQuery["type"] = type;
     }
   }
@@ -37,7 +37,9 @@ exports.filterCoupons = (req, res, next) => {
     mongoQuery["postedBy"] = postedBy;
   }
   if (category) {
-    mongoQuery["category"] = category;
+    if (category !== "All") {
+      mongoQuery["category"] = category;
+    }
   }
 
   res.locals.query = mongoQuery;
