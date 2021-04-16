@@ -193,12 +193,18 @@ exports.sendPasswordResetEmail = async (req, res, next) => {
 
 exports.resetPassword = async (req, res, next) => {
   try {
-    const { email, password } = req.body;
-    if (!email || !password) {
-      throw new BadRequest("Email and Password must be provided!");
+    const { email, password, code } = req.body;
+    if (!email || !password || code) {
+      throw new BadRequest("Email,Password and Code must be provided!");
     } else {
-      await User.findOneAndUpdate({ email }, { password });
-      return res.status(200).json({ message: "Password reset!" });
+      const user = await User.findOne({ email });
+      if (user && user.verificationCode === code) {
+        user.password = password;
+        await user.save();
+        return res.status(200).json({ message: "Password reset successfully" });
+      } else {
+        throw new BadRequest("Invalid code");
+      }
     }
   } catch (error) {
     next(error);

@@ -86,23 +86,15 @@ userSchema.methods.createRefreshToken = async function () {
 
 userSchema.pre("save", async function (next) {
   try {
-    if (this.isNew && this.authType === "plain") {
+    if (
+      (this.isNew || this.isModified("password")) &&
+      this.authType === "plain"
+    ) {
       const salt = await bcrypt.genSalt(12);
       this.password = await bcrypt.hash(this.password, salt);
     }
 
     return next();
-  } catch (error) {
-    console.error("Error in password hashing\n", error);
-  }
-});
-
-userSchema.pre("findOneAndUpdate", async function (next) {
-  try {
-    if (this._update.password) {
-      const salt = await bcrypt.genSalt(12);
-      this._update.password = await bcrypt.hash(this._update.password, salt);
-    }
   } catch (error) {
     console.error("Error in password hashing\n", error);
   }

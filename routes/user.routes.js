@@ -9,6 +9,8 @@ const {
   refreshToken,
   logoutUser,
   googleAuth,
+  sendPasswordResetEmail,
+  resetPassword,
 } = require("../controllers/UserController");
 
 const { isAuthenticated } = require("../middlewares/auth");
@@ -47,6 +49,22 @@ router.post("/login", loginUser);
  * @body 'tokenId'
  */
 router.post("/google_auth", googleAuth);
+
+/**
+ * @route POST /api/send_password_reset_mail
+ * @access 'public'
+ * @body 'email'
+ */
+
+router.post("/send_password_reset_mail", sendPasswordResetEmail);
+
+/**
+ * @route PUT /api/reset_password
+ * @access 'public'
+ * @body 'email','password','code'
+ */
+
+router.put("/api/reset_password", resetPassword);
 
 /**
  * @route POST /api/users/refresh_token
