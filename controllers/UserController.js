@@ -9,7 +9,10 @@ const {
   Unauthorized,
   Forbidden,
 } = require("../utils/error");
-const { sendVerificationCode } = require("../utils/email");
+const {
+  sendVerificationCode,
+  sendPasswordResetCode,
+} = require("../utils/email");
 
 exports.createUser = async (req, res, next) => {
   try {
@@ -158,6 +161,44 @@ exports.googleAuth = async (req, res, next) => {
       const accessToken = user.createAccessToken();
       const refreshToken = await user.createRefreshToken();
       return res.status(201).json({ accessToken, refreshToken });
+    }
+  } catch (error) {
+    next(error);
+  }
+};
+
+exports.sendPasswordResetEmail = async (req, res, next) => {
+  try {
+    const { email } = req.body;
+    if (!email) {
+      throw new BadRequest("Email must be provided");
+    } else {
+      let user = await User.findOne({ email });
+      if (!user) {
+        throw new NotFound("No user registered with this email!");
+      } else {
+        user.verificationCode = Math.floor(100000 + Math.random() * 900000);
+        await user.save();
+        sendPasswordResetCode(email, user.verificationCode);
+        return res.status(200).json({
+          message:
+            "A verification code has been sent to your email. Please enter it here",
+        });
+      }
+    }
+  } catch (error) {
+    next(error);
+  }
+};
+
+exports.resetPassword = async (req, res, next) => {
+  try {
+    const { email, password } = req.body;
+    if (!email || !password) {
+      throw new BadRequest("Email and Password must be provided!");
+    } else {
+      await User.findOneAndUpdate({ email }, { password });
+      return res.status(200).json({ message: "Password reset!" });
     }
   } catch (error) {
     next(error);
