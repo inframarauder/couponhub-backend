@@ -51,7 +51,7 @@ router.post("/login", loginUser);
 router.post("/google_auth", googleAuth);
 
 /**
- * @route POST /api/send_password_reset_mail
+ * @route POST /api/users/send_password_reset_mail
  * @access 'public'
  * @body 'email'
  */
@@ -59,7 +59,7 @@ router.post("/google_auth", googleAuth);
 router.post("/send_password_reset_mail", sendPasswordResetEmail);
 
 /**
- * @route PUT /api/reset_password
+ * @route PUT /api/users/reset_password
  * @access 'public'
  * @body 'email','password','code'
  */
