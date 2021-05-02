@@ -86,8 +86,11 @@ userSchema.methods.createRefreshToken = async function () {
 
 userSchema.pre("save", async function (next) {
   try {
-    if (this.isNew && this.authType === "plain") {
-      const salt = await bcrypt.genSalt(10);
+    if (
+      (this.isNew || this.isModified("password")) &&
+      this.authType === "plain"
+    ) {
+      const salt = await bcrypt.genSalt(12);
       this.password = await bcrypt.hash(this.password, salt);
     }
 

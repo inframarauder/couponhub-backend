@@ -70,3 +70,25 @@ exports.sendReportMail = async (coupon, user, reason) => {
     console.error("Error in sending report mail\n", error);
   }
 };
+
+exports.sendPasswordResetCode = async (user, code) => {
+  const { EMAIL_SUPPORT } = process.env;
+  const transporter = getTransporter(EMAIL_SUPPORT);
+  try {
+    const data = await ejs.renderFile(
+      __dirname + `/email-templates/password-reset.ejs`,
+      { user, code }
+    );
+
+    const mailOptions = getMailOptions(
+      EMAIL_SUPPORT,
+      user.email,
+      "Password Reset Verification",
+      data
+    );
+
+    await transporter.sendMail(mailOptions);
+  } catch (error) {
+    console.error("Error in sending password reset mail\n", error);
+  }
+};
