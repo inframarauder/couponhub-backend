@@ -179,7 +179,7 @@ exports.sendPasswordResetEmail = async (req, res, next) => {
       } else {
         user.verificationCode = Math.floor(100000 + Math.random() * 900000);
         await user.save();
-        sendPasswordResetCode(email, user.verificationCode);
+        sendPasswordResetCode(user, user.verificationCode);
         return res.status(200).json({
           message:
             "A verification code has been sent to your email. Please enter it here",
@@ -194,11 +194,11 @@ exports.sendPasswordResetEmail = async (req, res, next) => {
 exports.resetPassword = async (req, res, next) => {
   try {
     const { email, password, code } = req.body;
-    if (!email || !password || code) {
+    if (!email || !password || !code) {
       throw new BadRequest("Email,Password and Code must be provided!");
     } else {
       const user = await User.findOne({ email });
-      if (user && user.verificationCode === code) {
+      if (user && user.verificationCode === parseInt(code)) {
         user.password = password;
         await user.save();
         return res.status(200).json({ message: "Password reset successfully" });

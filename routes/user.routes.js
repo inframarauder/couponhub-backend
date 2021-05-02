@@ -64,7 +64,7 @@ router.post("/send_password_reset_mail", sendPasswordResetEmail);
  * @body 'email','password','code'
  */
 
-router.put("/api/reset_password", resetPassword);
+router.put("/reset_password", resetPassword);
 
 /**
  * @route POST /api/users/refresh_token
