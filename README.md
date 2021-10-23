@@ -13,7 +13,3 @@ Required env variables:
 - `EMAIL_PASSWORD`
 - `MAX_REPORTS`
 - `GOOGLE_CLIENT_ID`
-
-**TODO**
-
-- implement password reset
